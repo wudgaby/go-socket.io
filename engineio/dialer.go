@@ -3,8 +3,8 @@ package engineio
 import (
 	"errors"
 	"io"
-	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/googollee/go-socket.io/engineio/packet"
 	"github.com/googollee/go-socket.io/engineio/transport"
@@ -13,11 +13,14 @@ import (
 
 // Dialer is dialer configure.
 type Dialer struct {
-	Transports []transport.Transport
+	Transports   []transport.Transport
+	ExtraHeaders map[string][]string
+	Query        string
+	Auth         map[string]string
 }
 
 // Dial returns a connection which dials to url with requestHeader.
-func (d *Dialer) Dial(urlStr string, requestHeader http.Header) (Conn, error) {
+func (d *Dialer) Dial(urlStr string) (Conn, error) {
 	u, err := url.Parse(urlStr)
 	if err != nil {
 		logger.Error("parse url str:", err)
@@ -27,6 +30,15 @@ func (d *Dialer) Dial(urlStr string, requestHeader http.Header) (Conn, error) {
 
 	query := u.Query()
 	query.Set("EIO", "3")
+	parseQuery, err := url.ParseQuery(d.Query)
+	if err != nil {
+		logger.Error("parse query err:", err)
+		return nil, err
+	}
+	for key, vals := range parseQuery {
+		query.Set(key, strings.Join(vals, ","))
+	}
+
 	u.RawQuery = query.Encode()
 
 	var conn transport.Conn
@@ -40,7 +52,7 @@ func (d *Dialer) Dial(urlStr string, requestHeader http.Header) (Conn, error) {
 
 		t := d.Transports[i]
 
-		conn, err = t.Dial(u, requestHeader)
+		conn, err = t.Dial(u, d.ExtraHeaders)
 		if err != nil {
 			logger.Error("transport dial:", err)
 

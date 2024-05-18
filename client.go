@@ -2,6 +2,7 @@ package socketio
 
 import (
 	"errors"
+	"github.com/googollee/go-socket.io/engineio/transport/websocket"
 	"net/url"
 	"path"
 	"strings"
@@ -65,10 +66,18 @@ func fmtNS(ns string) string {
 
 func (c *Client) Connect() error {
 	dialer := engineio.Dialer{
-		Transports: []transport.Transport{polling.Default},
+		Transports:   []transport.Transport{websocket.Default, polling.Default},
+		ExtraHeaders: c.opts.ExtraHeaders,
+		Query:        c.opts.Query,
+		Auth:         c.opts.Auth,
 	}
 
-	enginioCon, err := dialer.Dial(c.url, nil)
+	// Use opts Transports when NewClient
+	if len(c.opts.Transports) > 0 {
+		dialer.Transports = c.opts.Transports
+	}
+
+	enginioCon, err := dialer.Dial(c.url)
 	if err != nil {
 		return err
 	}

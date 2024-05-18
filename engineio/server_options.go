@@ -20,6 +20,10 @@ type Options struct {
 
 	RequestChecker CheckerFunc
 	ConnInitor     ConnInitorFunc
+
+	ExtraHeaders map[string][]string
+	Query        string
+	Auth         map[string]string
 }
 
 func (c *Options) getRequestChecker() CheckerFunc {
